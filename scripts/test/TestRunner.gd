@@ -10,12 +10,13 @@ func _ready() -> void:
 	_test_textures_and_sounds()
 	_test_arena_and_towers()
 	_test_combat_and_spells()
+	_test_nearest_target_and_giant_building_focus()
 	_test_bridge_and_water_pathfinding()
 	_test_match_manager_flow()
 	_test_networking_setup()
 	
 	print("\n==========================================")
-	print("🎉 ALL 8 TEST SUITES PASSED FLAWLESSLY!")
+	print("🎉 ALL 9 TEST SUITES PASSED FLAWLESSLY!")
 	print("==========================================\n")
 	get_tree().quit(0)
 
@@ -155,8 +156,83 @@ func _test_combat_and_spells() -> void:
 	archer.queue_free()
 	print("  ✓ Units initialization & stats verified")
 
+func _test_nearest_target_and_giant_building_focus() -> void:
+	print("\n[6/9] Testing Nearest Enemy Dynamic Retargeting & Giant Building Focus...")
+	var arena_scene = load("res://scenes/game_arena.tscn").instantiate()
+	add_child(arena_scene)
+	
+	var arena = arena_scene.get_node("Arena")
+	assert(arena != null, "Arena node not found")
+	
+	# Test 1: Dynamic retargeting for troops when closer enemy appears
+	var blue_knight = arena._instantiate_unit("knight", 1, Vector2(0, 80))
+	var red_tower = arena.get_target_tower_for_unit(blue_knight)
+	
+	# Initial target without enemy units is the enemy princess tower
+	blue_knight._process_unit_ai(0.1)
+	assert(blue_knight.target_entity == red_tower, "Knight should initially target enemy tower")
+	
+	# Opponent spawns a Skeleton at distance 40
+	var red_skel_1 = arena._instantiate_unit("skeletons", 2, Vector2(0, 40))
+	blue_knight._process_unit_ai(0.1)
+	assert(blue_knight.target_entity == red_skel_1, "Knight should dynamically switch to newly appeared closer skeleton")
+	
+	# Opponent spawns another Skeleton even closer at distance 15
+	var red_skel_2 = arena._instantiate_unit("skeletons", 2, Vector2(0, 65))
+	blue_knight._process_unit_ai(0.1)
+	assert(blue_knight.target_entity == red_skel_2, "Knight should dynamically retarget to the nearest skeleton")
+	
+	# Kill the closer skeleton -> Knight should switch back to remaining skeleton
+	red_skel_2.is_dead = true
+	blue_knight._process_unit_ai(0.1)
+	assert(blue_knight.target_entity == red_skel_1, "Knight should switch to next nearest skeleton when current target dies")
+	
+	# Clean up units
+	blue_knight.queue_free()
+	red_skel_1.queue_free()
+	red_skel_2.queue_free()
+	arena.units_team1.clear()
+	arena.units_team2.clear()
+	print("  ✓ Nearest valid target dynamic retargeting verified")
+	
+	# Test 2: Giant Building Targeter & Cannon Focus
+	var blue_giant = arena._instantiate_unit("giant", 1, Vector2(-125, 80))
+	assert(blue_giant.target_type == CardDatabase.TargetType.BUILDINGS_ONLY, "Giant must be BUILDINGS_ONLY")
+	
+	# Spawn enemy regular troops right in front of Giant
+	var red_troop = arena._instantiate_unit("knight", 2, Vector2(-125, 60))
+	blue_giant._process_unit_ai(0.1)
+	assert(blue_giant.target_entity != red_troop, "Giant MUST ignore non-building enemy troops!")
+	
+	# Spawn enemy Cannon defensive building in the center
+	var red_cannon = arena._instantiate_unit("cannon", 2, Vector2(0, 0))
+	assert(red_cannon.is_building == true, "Cannon must be a building")
+	
+	# Distance to Cannon is ~147, distance to Princess Tower is ~280
+	blue_giant._process_unit_ai(0.1)
+	assert(blue_giant.target_entity == red_cannon, "Giant should target closer Cannon building instead of distant tower!")
+	print("  ✓ Giant building-only targeting correctly focuses deployed Cannon over troops and distant towers")
+	
+	# Clean up previous troops so Cannon has a clean field
+	blue_giant.queue_free()
+	red_troop.queue_free()
+	arena.units_team1.clear()
+	arena.units_team2.erase(red_troop)
+	
+	# Test 3: Cannon defensive targeting (Ground vs Flying)
+	var blue_minions = arena._instantiate_unit("minions", 1, Vector2(0, 40)) # 40 units away (flying)
+	red_cannon._process_unit_ai(0.1)
+	assert(red_cannon.target_entity == null, "Cannon (GROUND only) must ignore flying Minions!")
+	
+	var blue_ground = arena._instantiate_unit("skeletons", 1, Vector2(0, 60)) # 60 units away (ground)
+	red_cannon._process_unit_ai(0.1)
+	assert(red_cannon.target_entity == blue_ground, "Cannon should target ground unit in range!")
+	print("  ✓ Defensive Cannon targeting ground units and ignoring air verified")
+	
+	arena_scene.queue_free()
+
 func _test_bridge_and_water_pathfinding() -> void:
-	print("\n[6/8] Testing Ground Unit Bridge Pathfinding & Flying Unit Water Bypass...")
+	print("\n[7/9] Testing Ground Unit Bridge Pathfinding & Flying Unit Water Bypass...")
 	var unit_scene = load("res://scenes/entities/unit.tscn")
 	assert(unit_scene != null, "Unit scene failed to load")
 	
@@ -229,7 +305,7 @@ func _test_bridge_and_water_pathfinding() -> void:
 	print("  ✓ Ground bridge navigation, water blocking, and flying unit bypass verified!")
 
 func _test_match_manager_flow() -> void:
-	print("\n[7/8] Testing MatchManager & Elixir/Hand Cycles...")
+	print("\n[8/9] Testing MatchManager & Elixir/Hand Cycles...")
 	var arena_main = load("res://scenes/game_arena.tscn").instantiate()
 	add_child(arena_main)
 	
@@ -248,7 +324,7 @@ func _test_match_manager_flow() -> void:
 	arena_main.queue_free()
 
 func _test_networking_setup() -> void:
-	print("\n[8/8] Testing NetworkManager hosting and local joining...")
+	print("\n[9/9] Testing NetworkManager hosting and local joining...")
 	var host_err = NetworkManager.host_game(7788)
 	assert(host_err == OK, "Failed to create local host server on 7788")
 	assert(NetworkManager.is_host == true, "is_host must be true")

@@ -379,21 +379,51 @@ func remove_unit(unit: Node2D) -> void:
 func get_units_for_team(team: int) -> Array[Node2D]:
 	return units_team1 if team == 1 else units_team2
 
-func get_target_tower_for_unit(unit: Node2D) -> Node2D:
-	var enemy_towers = towers_team2 if unit.team == 1 else towers_team1
+func get_valid_enemy_towers(for_team: int) -> Array[Node2D]:
+	var enemy_towers = towers_team2 if for_team == 1 else towers_team1
+	var valid: Array[Node2D] = []
 	
-	var princess_key = "princess_left" if unit.lane == "left" else "princess_right"
-	if enemy_towers.has(princess_key) and is_instance_valid(enemy_towers[princess_key]) and not enemy_towers[princess_key].is_dead:
-		return enemy_towers[princess_key]
+	var p_left = enemy_towers.get("princess_left")
+	var p_right = enemy_towers.get("princess_right")
+	var king = enemy_towers.get("king")
+	
+	var p_left_alive = p_left != null and is_instance_valid(p_left) and not p_left.is_dead
+	var p_right_alive = p_right != null and is_instance_valid(p_right) and not p_right.is_dead
+	
+	if p_left_alive:
+		valid.append(p_left)
+	if p_right_alive:
+		valid.append(p_right)
 		
-	var other_princess = "princess_right" if unit.lane == "left" else "princess_left"
-	if enemy_towers.has(other_princess) and is_instance_valid(enemy_towers[other_princess]) and not enemy_towers[other_princess].is_dead:
-		return enemy_towers[other_princess]
+	if king != null and is_instance_valid(king) and not king.is_dead:
+		# King is valid target if activated OR if at least one princess tower is destroyed
+		if king.is_king_active or not p_left_alive or not p_right_alive:
+			valid.append(king)
+			
+	return valid
+
+func get_target_tower_for_unit(unit: Node2D) -> Node2D:
+	var valid_towers = get_valid_enemy_towers(unit.team)
+	if valid_towers.is_empty():
+		var enemy_towers = towers_team2 if unit.team == 1 else towers_team1
+		var king = enemy_towers.get("king")
+		if king and is_instance_valid(king) and not king.is_dead:
+			return king
+		return null
 		
-	if enemy_towers.has("king") and is_instance_valid(enemy_towers["king"]) and not enemy_towers["king"].is_dead:
-		return enemy_towers["king"]
-		
-	return null
+	# Pick closest valid tower, slightly biasing towards unit's lane
+	var best_tower: Node2D = null
+	var min_dist: float = INF
+	
+	for t in valid_towers:
+		var dist = unit.global_position.distance_to(t.global_position)
+		var is_lane_match = (unit.lane == "left" and t.tower_type == "princess_left") or (unit.lane == "right" and t.tower_type == "princess_right")
+		var effective_dist = dist - (30.0 if is_lane_match else 0.0)
+		if effective_dist < min_dist:
+			min_dist = effective_dist
+			best_tower = t
+			
+	return best_tower
 
 func apply_splash_damage(epicenter: Vector2, radius: float, dmg: float, team: int, crown_mult: float = 1.0) -> void:
 	var enemy_team = 2 if team == 1 else 1

@@ -111,8 +111,25 @@ func _process_combat() -> void:
 		_attack_target(target_entity)
 		attack_cooldown = hit_speed
 
+func _get_arena() -> Node2D:
+	var p = get_parent()
+	if p:
+		if p.name == "Arena":
+			return p as Node2D
+		var gp = p.get_parent()
+		if gp and gp.name == "Arena":
+			return gp as Node2D
+	if get_tree() and get_tree().current_scene:
+		var a = get_tree().current_scene.get_node_or_null("Arena")
+		if a:
+			return a as Node2D
+		var ga = get_tree().current_scene.find_child("Arena", true, false)
+		if ga:
+			return ga as Node2D
+	return null
+
 func _find_nearest_enemy() -> Node2D:
-	var arena = get_tree().current_scene.get_node_or_null("Arena")
+	var arena = _get_arena()
 	if not arena:
 		return null
 		
@@ -130,7 +147,7 @@ func _find_nearest_enemy() -> Node2D:
 	return nearest
 
 func _attack_target(target: Node2D) -> void:
-	var arena = get_tree().current_scene.get_node_or_null("Arena")
+	var arena = _get_arena()
 	if not arena:
 		return
 		
@@ -155,7 +172,7 @@ func take_damage(amount: float, crown_multiplier: float = 1.0) -> void:
 		sprite.modulate = Color(2.0, 1.2, 1.2)
 		tw.tween_property(sprite, "modulate", Color(1, 1, 1), 0.15)
 		
-	var arena = get_tree().current_scene.get_node_or_null("Arena")
+	var arena = _get_arena()
 	if arena:
 		arena.spawn_floating_text("-" + str(int(final_dmg)), global_position + Vector2(0, -30), Color(1, 0.3, 0.3))
 		
@@ -172,7 +189,7 @@ func _die() -> void:
 	if sprite:
 		sprite.modulate = Color(0.3, 0.3, 0.3, 0.6)
 	
-	var arena = get_tree().current_scene.get_node_or_null("Arena")
+	var arena = _get_arena()
 	if arena:
 		arena.spawn_explosion_fx(global_position, 40.0)
 		

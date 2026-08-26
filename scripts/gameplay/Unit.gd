@@ -141,15 +141,15 @@ func _process(delta: float) -> void:
 	_animate_unit(delta)
 
 func _process_unit_ai(delta: float) -> void:
-	if target_entity:
-		if not is_instance_valid(target_entity) or target_entity.is_dead:
-			target_entity = null
-		else:
-			var dist = global_position.distance_to(target_entity.global_position)
-			if dist > 260.0:
-				target_entity = null
-
-	if target_entity == null:
+	# Check if current target is still valid and actively within attack range
+	var target_valid_and_in_range = false
+	if target_entity and is_instance_valid(target_entity) and not target_entity.is_dead:
+		var dist = global_position.distance_to(target_entity.global_position)
+		if dist <= attack_range:
+			target_valid_and_in_range = true
+			
+	# If not actively in attack range of a valid target, always acquire the nearest valid target
+	if not target_valid_and_in_range:
 		target_entity = _acquire_best_target()
 		
 	if target_entity != null:
@@ -163,42 +163,106 @@ func _process_unit_ai(delta: float) -> void:
 			if not is_building:
 				state = State.WALKING
 				_move_towards(target_entity.global_position, delta)
+			else:
+				state = State.IDLE
 	else:
 		if not is_building:
 			state = State.WALKING
 			var dest = _get_default_target_pos()
 			_move_towards(dest, delta)
+		else:
+			state = State.IDLE
+
+func _get_arena() -> Node2D:
+	var p = get_parent()
+	if p:
+		if p.name == "Arena":
+			return p as Node2D
+		var gp = p.get_parent()
+		if gp and gp.name == "Arena":
+			return gp as Node2D
+	if get_tree() and get_tree().current_scene:
+		var a = get_tree().current_scene.get_node_or_null("Arena")
+		if a:
+			return a as Node2D
+		var ga = get_tree().current_scene.find_child("Arena", true, false)
+		if ga:
+			return ga as Node2D
+	return null
 
 func _acquire_best_target() -> Node2D:
-	var arena = get_tree().current_scene.get_node_or_null("Arena")
+	var arena = _get_arena()
 	if not arena:
 		return null
 		
 	var enemy_team = 2 if team == 1 else 1
 	var candidate: Node2D = null
-	var min_dist: float = 190.0
+	var min_dist: float = INF
 	
+	# --- 1. BUILDINGS_ONLY (e.g. GIANT) ---
 	if target_type == CardDatabase.TargetType.BUILDINGS_ONLY:
-		return arena.get_target_tower_for_unit(self)
+		# Check all deployed enemy buildings (e.g. Cannon)
+		var enemy_units = arena.get_units_for_team(enemy_team)
+		for u in enemy_units:
+			if not is_instance_valid(u) or u.is_dead:
+				continue
+			if u.is_building:
+				var dist = global_position.distance_to(u.global_position)
+				if dist < min_dist:
+					min_dist = dist
+					candidate = u
+					
+		# Check all valid enemy crown towers
+		var enemy_towers = arena.get_valid_enemy_towers(team)
+		for t in enemy_towers:
+			if not is_instance_valid(t) or t.is_dead:
+				continue
+			var dist = global_position.distance_to(t.global_position)
+			if dist < min_dist:
+				min_dist = dist
+				candidate = t
+				
+		return candidate
 		
+	# --- 2. REGULAR UNITS & DEFENSIVE BUILDINGS (GROUND, GROUND_AND_AIR) ---
 	var enemy_units = arena.get_units_for_team(enemy_team)
+	var best_unit_candidate: Node2D = null
+	var min_unit_dist: float = INF
+	
 	for u in enemy_units:
 		if not is_instance_valid(u) or u.is_dead:
 			continue
 		if u.is_flying and target_type == CardDatabase.TargetType.GROUND:
 			continue
 		var dist = global_position.distance_to(u.global_position)
-		if dist < min_dist:
-			min_dist = dist
-			candidate = u
+		if dist < min_unit_dist:
+			min_unit_dist = dist
+			best_unit_candidate = u
 			
-	if candidate == null:
-		candidate = arena.get_target_tower_for_unit(self)
+	# Defensive stationary buildings (e.g. Cannon) only target within their attack range
+	if is_building:
+		if best_unit_candidate and min_unit_dist <= attack_range:
+			return best_unit_candidate
+		return null
 		
-	return candidate
+	# Mobile troops:
+	# If any enemy troop/building is within aggro/sight range (200.0), target the nearest one!
+	const AGGRO_RANGE: float = 200.0
+	if best_unit_candidate and min_unit_dist <= AGGRO_RANGE:
+		return best_unit_candidate
+		
+	# Otherwise, target the default lane crown tower
+	var target_tower = arena.get_target_tower_for_unit(self)
+	if target_tower and is_instance_valid(target_tower) and not target_tower.is_dead:
+		var dist_to_tower = global_position.distance_to(target_tower.global_position)
+		if best_unit_candidate and min_unit_dist < dist_to_tower:
+			return best_unit_candidate
+		return target_tower
+		
+	return best_unit_candidate
 
 func _get_default_target_pos() -> Vector2:
-	var arena = get_tree().current_scene.get_node_or_null("Arena")
+	var arena = _get_arena()
 	var target_tower = arena.get_target_tower_for_unit(self) if arena else null
 	if target_tower and is_instance_valid(target_tower) and not target_tower.is_dead:
 		return target_tower.global_position
@@ -301,7 +365,7 @@ func _perform_attack() -> void:
 	if not target_entity or not is_instance_valid(target_entity) or target_entity.is_dead:
 		return
 		
-	var arena = get_tree().current_scene.get_node_or_null("Arena")
+	var arena = _get_arena()
 	if not arena:
 		return
 		
@@ -335,7 +399,7 @@ func _perform_attack() -> void:
 
 func _deal_direct_damage(target: Node2D) -> void:
 	if splash_radius > 0.0:
-		var arena = get_tree().current_scene.get_node_or_null("Arena")
+		var arena = _get_arena()
 		if arena:
 			arena.apply_splash_damage(target.global_position, splash_radius, damage, team, crown_multiplier)
 	else:
@@ -353,7 +417,7 @@ func take_damage(amount: float, p_crown_mult: float = 1.0) -> void:
 		sprite.modulate = Color(2.0, 1.2, 1.2)
 		tw.tween_property(sprite, "modulate", Color(1, 1, 1), 0.12)
 		
-	var arena = get_tree().current_scene.get_node_or_null("Arena")
+	var arena = _get_arena()
 	if arena:
 		arena.spawn_floating_text("-" + str(int(amount)), global_position + Vector2(randf_range(-10, 10), -20), Color(1, 0.4, 0.4))
 		
@@ -366,7 +430,7 @@ func _die() -> void:
 	is_dead = true
 	state = State.DYING
 	
-	var arena = get_tree().current_scene.get_node_or_null("Arena")
+	var arena = _get_arena()
 	if arena:
 		arena.remove_unit(self)
 		arena.spawn_elixir_dissolve_fx(global_position)
