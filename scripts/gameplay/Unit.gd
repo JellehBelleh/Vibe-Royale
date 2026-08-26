@@ -33,9 +33,12 @@ var is_dead: bool = false
 
 var target_display_pos: Vector2 = Vector2.ZERO
 
-# Pathfinding bridges (Canonical)
+# Pathfinding bridges & river geometry (Canonical)
 const BRIDGE_LEFT = Vector2(-125.0, 0.0)
 const BRIDGE_RIGHT = Vector2(125.0, 0.0)
+const BRIDGE_HALF_WIDTH: float = 24.0
+const BRIDGE_ENTRY_OFFSET: float = 28.0
+const RIVER_LIMIT: float = 22.0
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var hp_bar: ProgressBar = $HPBar
@@ -163,8 +166,8 @@ func _process_unit_ai(delta: float) -> void:
 	else:
 		if not is_building:
 			state = State.WALKING
-			var waypoint = _get_lane_waypoint()
-			_move_towards(waypoint, delta)
+			var dest = _get_default_target_pos()
+			_move_towards(dest, delta)
 
 func _acquire_best_target() -> Node2D:
 	var arena = get_tree().current_scene.get_node_or_null("Arena")
@@ -194,27 +197,105 @@ func _acquire_best_target() -> Node2D:
 		
 	return candidate
 
-func _get_lane_waypoint() -> Vector2:
+func _get_default_target_pos() -> Vector2:
 	var arena = get_tree().current_scene.get_node_or_null("Arena")
 	var target_tower = arena.get_target_tower_for_unit(self) if arena else null
-	var tower_pos = target_tower.global_position if target_tower else Vector2(0, -310 if team == 1 else 310)
-	
-	if is_flying:
-		return tower_pos
+	if target_tower and is_instance_valid(target_tower) and not target_tower.is_dead:
+		return target_tower.global_position
+	return Vector2(0.0, -310.0 if team == 1 else 310.0)
+
+func _get_target_bridge() -> Vector2:
+	if global_position.x < -20.0:
+		return BRIDGE_LEFT
+	elif global_position.x > 20.0:
+		return BRIDGE_RIGHT
 		
-	var bridge = BRIDGE_LEFT if lane == "left" else BRIDGE_RIGHT
-	var is_on_home_side = (team == 1 and global_position.y > 15.0) or (team == 2 and global_position.y < -15.0)
+	if lane == "left":
+		return BRIDGE_LEFT
+	elif lane == "right":
+		return BRIDGE_RIGHT
+		
+	return BRIDGE_LEFT if global_position.x <= 0 else BRIDGE_RIGHT
+
+func _get_ground_waypoint(target_pos: Vector2) -> Vector2:
+	var cur_x = global_position.x
+	var cur_y = global_position.y
+	var dest_y = target_pos.y
+	var bridge = _get_target_bridge()
+	var bridge_x = bridge.x
 	
-	if is_on_home_side:
-		if abs(global_position.y) > 10.0:
-			return Vector2(bridge.x, global_position.y - (30.0 if team == 1 else -30.0))
-		return bridge
+	var is_unit_south = (cur_y >= BRIDGE_ENTRY_OFFSET - 2.0)
+	var is_unit_north = (cur_y <= -BRIDGE_ENTRY_OFFSET + 2.0)
+	var is_dest_south = (dest_y >= RIVER_LIMIT)
+	var is_dest_north = (dest_y <= -RIVER_LIMIT)
+	
+	# Case 1: Unit is on the South bank
+	if is_unit_south:
+		if is_dest_south:
+			return target_pos
+		else:
+			# If at/near the South bridge entrance, cross into the bridge towards North exit
+			if abs(cur_x - bridge_x) <= 16.0 and cur_y <= BRIDGE_ENTRY_OFFSET + 4.0:
+				return Vector2(bridge_x, -BRIDGE_ENTRY_OFFSET)
+			return Vector2(bridge_x, BRIDGE_ENTRY_OFFSET)
+			
+	# Case 2: Unit is on the North bank
+	elif is_unit_north:
+		if is_dest_north:
+			return target_pos
+		else:
+			# If at/near the North bridge entrance, cross into the bridge towards South exit
+			if abs(cur_x - bridge_x) <= 16.0 and cur_y >= -BRIDGE_ENTRY_OFFSET - 4.0:
+				return Vector2(bridge_x, BRIDGE_ENTRY_OFFSET)
+			return Vector2(bridge_x, -BRIDGE_ENTRY_OFFSET)
+			
+	# Case 3: Unit is in the bridge corridor (|cur_y| < 26.0)
 	else:
-		return tower_pos
+		if dest_y < cur_y:
+			return Vector2(bridge_x, -BRIDGE_ENTRY_OFFSET)
+		else:
+			return Vector2(bridge_x, BRIDGE_ENTRY_OFFSET)
+
+func _clamp_ground_position(pos: Vector2) -> Vector2:
+	pos.x = clamp(pos.x, -215.0, 215.0)
+	pos.y = clamp(pos.y, -390.0, 390.0)
+	
+	if abs(pos.y) < RIVER_LIMIT:
+		var on_left_bridge = abs(pos.x - BRIDGE_LEFT.x) <= BRIDGE_HALF_WIDTH
+		var on_right_bridge = abs(pos.x - BRIDGE_RIGHT.x) <= BRIDGE_HALF_WIDTH
+		
+		if not (on_left_bridge or on_right_bridge):
+			if global_position.y >= RIVER_LIMIT:
+				pos.y = RIVER_LIMIT
+			elif global_position.y <= -RIVER_LIMIT:
+				pos.y = -RIVER_LIMIT
+			else:
+				pos.y = RIVER_LIMIT if global_position.y >= 0.0 else -RIVER_LIMIT
+				
+	return pos
+
+func _get_lane_waypoint() -> Vector2:
+	var dest = _get_default_target_pos()
+	if is_flying:
+		return dest
+	return _get_ground_waypoint(dest)
 
 func _move_towards(target_pos: Vector2, delta: float) -> void:
-	var dir = (target_pos - global_position).normalized()
-	global_position += dir * move_speed * delta
+	var waypoint = target_pos
+	if not is_flying:
+		waypoint = _get_ground_waypoint(target_pos)
+		
+	var diff = waypoint - global_position
+	if diff.length_squared() < 0.01:
+		return
+		
+	var dir = diff.normalized()
+	var new_pos = global_position + dir * move_speed * delta
+	
+	if not is_flying:
+		new_pos = _clamp_ground_position(new_pos)
+		
+	global_position = new_pos
 
 func _perform_attack() -> void:
 	if not target_entity or not is_instance_valid(target_entity) or target_entity.is_dead:

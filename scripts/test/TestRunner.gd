@@ -9,16 +9,17 @@ func _ready() -> void:
 	_test_textures_and_sounds()
 	_test_arena_and_towers()
 	_test_combat_and_spells()
+	_test_bridge_and_water_pathfinding()
 	_test_match_manager_flow()
 	_test_networking_setup()
 	
 	print("\n==========================================")
-	print("🎉 ALL 6 TEST SUITES PASSED FLAWLESSLY!")
+	print("🎉 ALL 7 TEST SUITES PASSED FLAWLESSLY!")
 	print("==========================================\n")
 	get_tree().quit(0)
 
 func _test_card_database() -> void:
-	print("[1/6] Testing CardDatabase...")
+	print("[1/7] Testing CardDatabase...")
 	var all_ids = CardDatabase.get_all_card_ids()
 	assert(all_ids.size() >= 8, "Must have at least 8 cards! Found: " + str(all_ids.size()))
 	print("  ✓ Total cards defined: ", all_ids.size(), " (IDs: ", all_ids, ")")
@@ -34,7 +35,7 @@ func _test_card_database() -> void:
 	print("  ✓ All card stats validated!")
 
 func _test_textures_and_sounds() -> void:
-	print("\n[2/6] Testing TextureGenerator & SoundManager...")
+	print("\n[2/7] Testing TextureGenerator & SoundManager...")
 	for id in CardDatabase.get_all_card_ids():
 		var icon = TextureGenerator.get_card_icon(id)
 		assert(icon != null, "Failed to generate card icon for " + id)
@@ -52,7 +53,7 @@ func _test_textures_and_sounds() -> void:
 	print("  ✓ Procedural synthesized SFX audio pool verified")
 
 func _test_arena_and_towers() -> void:
-	print("\n[3/6] Testing Arena & Tower Setup...")
+	print("\n[3/7] Testing Arena & Tower Setup...")
 	var arena_scene = load("res://scenes/entities/tower.tscn")
 	assert(arena_scene != null, "Tower scene failed to load")
 	
@@ -72,7 +73,7 @@ func _test_arena_and_towers() -> void:
 	print("  ✓ Tower mechanics & King activation verified")
 
 func _test_combat_and_spells() -> void:
-	print("\n[4/6] Testing Combat Entities & Spells...")
+	print("\n[4/7] Testing Combat Entities & Spells...")
 	var unit_scene = load("res://scenes/entities/unit.tscn")
 	assert(unit_scene != null, "Unit scene failed to load")
 	
@@ -94,8 +95,81 @@ func _test_combat_and_spells() -> void:
 	archer.queue_free()
 	print("  ✓ Units initialization & stats verified")
 
+func _test_bridge_and_water_pathfinding() -> void:
+	print("\n[5/7] Testing Ground Unit Bridge Pathfinding & Flying Unit Water Bypass...")
+	var unit_scene = load("res://scenes/entities/unit.tscn")
+	assert(unit_scene != null, "Unit scene failed to load")
+	
+	# Test 1: Ground unit (Knight) pathfinding South to North
+	var blue_knight = unit_scene.instantiate()
+	add_child(blue_knight)
+	blue_knight.setup("knight", 1, Vector2(-60, 150)) # South side, left lane
+	assert(blue_knight.is_flying == false, "Knight must not be flying")
+	
+	var dest_north_tower = Vector2(-125, -200)
+	var wp1 = blue_knight._get_ground_waypoint(dest_north_tower)
+	assert(wp1 == Vector2(-125, 28), "Ground unit on south bank should path to South bridge entrance (-125, 28), got: " + str(wp1))
+	
+	# Move near entrance
+	blue_knight.global_position = Vector2(-125, 27)
+	var wp2 = blue_knight._get_ground_waypoint(dest_north_tower)
+	assert(wp2 == Vector2(-125, -28), "Ground unit entering bridge should path to North bridge exit (-125, -28), got: " + str(wp2))
+	
+	# Move to other side of bridge
+	blue_knight.global_position = Vector2(-125, -27)
+	var wp3 = blue_knight._get_ground_waypoint(dest_north_tower)
+	assert(wp3 == dest_north_tower, "Ground unit on north bank should path directly to north tower, got: " + str(wp3))
+	
+	# Test 2: Ground unit (Knight) pathfinding North to South on Right lane
+	var red_knight = unit_scene.instantiate()
+	add_child(red_knight)
+	red_knight.setup("knight", 2, Vector2(60, -150)) # North side, right lane
+	var dest_south_tower = Vector2(125, 200)
+	var r_wp1 = red_knight._get_ground_waypoint(dest_south_tower)
+	assert(r_wp1 == Vector2(125, -28), "Team 2 unit on north bank should path to North bridge entrance (125, -28), got: " + str(r_wp1))
+	
+	red_knight.global_position = Vector2(125, -27)
+	var r_wp2 = red_knight._get_ground_waypoint(dest_south_tower)
+	assert(r_wp2 == Vector2(125, 28), "Team 2 unit entering bridge should path to South exit (125, 28), got: " + str(r_wp2))
+	
+	red_knight.global_position = Vector2(125, 27)
+	var r_wp3 = red_knight._get_ground_waypoint(dest_south_tower)
+	assert(r_wp3 == dest_south_tower, "Team 2 unit on south bank should path directly to target, got: " + str(r_wp3))
+	
+	# Test 3: Water barrier clamping for ground units
+	blue_knight.global_position = Vector2(0, 50)
+	var blocked_pos = blue_knight._clamp_ground_position(Vector2(0, 10)) # Middle of river
+	assert(blocked_pos.y >= 22.0, "Ground unit should be blocked from entering river water outside bridge, got: " + str(blocked_pos))
+	
+	blue_knight.global_position = Vector2(-125, 50)
+	var allowed_pos = blue_knight._clamp_ground_position(Vector2(-125, 10)) # On left bridge
+	assert(allowed_pos == Vector2(-125, 10), "Ground unit on bridge should be allowed to cross, got: " + str(allowed_pos))
+	
+	# Test 4: Flying units (Baby Dragon & Minions) ignore water and fly straight
+	var dragon = unit_scene.instantiate()
+	add_child(dragon)
+	dragon.setup("baby_dragon", 1, Vector2(0, 100))
+	assert(dragon.is_flying == true, "Baby dragon must be flying")
+	
+	# Move baby dragon 1 frame towards (0, -100) straight across water
+	var dragon_start_pos = dragon.global_position
+	dragon._move_towards(Vector2(0, -100), 0.1)
+	assert(dragon.global_position.x == 0.0, "Flying unit should fly straight without diverting to bridge X, got X=" + str(dragon.global_position.x))
+	assert(dragon.global_position.y < dragon_start_pos.y, "Flying unit should move directly towards target Y")
+	
+	var minions = unit_scene.instantiate()
+	add_child(minions)
+	minions.setup("minions", 2, Vector2(0, -100))
+	assert(minions.is_flying == true, "Minions must be flying")
+	
+	blue_knight.queue_free()
+	red_knight.queue_free()
+	dragon.queue_free()
+	minions.queue_free()
+	print("  ✓ Ground bridge navigation, water blocking, and flying unit bypass verified!")
+
 func _test_match_manager_flow() -> void:
-	print("\n[5/6] Testing MatchManager & Elixir/Hand Cycles...")
+	print("\n[6/7] Testing MatchManager & Elixir/Hand Cycles...")
 	var arena_main = load("res://scenes/game_arena.tscn").instantiate()
 	add_child(arena_main)
 	
@@ -114,7 +188,7 @@ func _test_match_manager_flow() -> void:
 	arena_main.queue_free()
 
 func _test_networking_setup() -> void:
-	print("\n[6/6] Testing NetworkManager hosting and local joining...")
+	print("\n[7/7] Testing NetworkManager hosting and local joining...")
 	var host_err = NetworkManager.host_game(7788)
 	assert(host_err == OK, "Failed to create local host server on 7788")
 	assert(NetworkManager.is_host == true, "is_host must be true")
