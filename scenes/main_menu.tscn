@@ -1,0 +1,402 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/MainMenu.gd" id="1_mmenu"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
+bg_color = Color(0.08, 0.1, 0.15, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_solo"]
+bg_color = Color(0.2, 0.65, 0.3, 1)
+border_width_bottom = 4
+border_color = Color(0.12, 0.45, 0.2, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_host"]
+bg_color = Color(0.2, 0.5, 0.85, 1)
+border_width_bottom = 4
+border_color = Color(0.12, 0.32, 0.6, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_join"]
+bg_color = Color(0.6, 0.25, 0.75, 1)
+border_width_bottom = 4
+border_color = Color(0.4, 0.15, 0.52, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_cards"]
+bg_color = Color(0.85, 0.6, 0.15, 1)
+border_width_bottom = 4
+border_color = Color(0.6, 0.4, 0.08, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialog"]
+bg_color = Color(0.14, 0.16, 0.22, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.85, 0.7, 0.2, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_size = 16
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_mmenu")
+
+[node name="Background" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
+
+[node name="TitleBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 80.0
+offset_bottom = 220.0
+grow_horizontal = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="TitleBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0.2, 0.1, 0, 1)
+theme_override_constants/outline_size = 10
+theme_override_font_sizes/font_size = 46
+text = "VIBE ROYALE"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="TitleBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.85, 0.95, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 16
+text = "1v1 REAL-TIME ARENA BATTLE"
+horizontal_alignment = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -80.0
+offset_right = 150.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+
+[node name="SoloButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_solo")
+text = "⚔️ Solo Battle vs AI"
+
+[node name="HostButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_host")
+text = "👑 Host 1v1 Match"
+
+[node name="JoinButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_join")
+text = "⚡ Join 1v1 Match"
+
+[node name="CardsButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_cards")
+text = "📜 Card Collection & Deck"
+
+[node name="HowToButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "❓ How To Play"
+
+[node name="HostDialog" type="Panel" parent="."]
+visible = false
+custom_minimum_size = Vector2(360, 220)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -110.0
+offset_right = 180.0
+offset_bottom = 110.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_dialog")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HostDialog"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="StatusLabel" type="Label" parent="HostDialog/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Hosting match on Port 7777...
+Waiting for Player 2 to join (127.0.0.1:7777)..."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="CancelHostButton" type="Button" parent="HostDialog/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "Cancel Hosting"
+
+[node name="JoinDialog" type="Panel" parent="."]
+visible = false
+custom_minimum_size = Vector2(360, 280)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -140.0
+offset_right = 180.0
+offset_bottom = 140.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_dialog")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="JoinDialog"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 20.0
+offset_right = -24.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="JoinDialog/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Connect to Host"
+horizontal_alignment = 1
+
+[node name="IPInput" type="LineEdit" parent="JoinDialog/VBoxContainer"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+placeholder_text = "Host IP (e.g. 127.0.0.1)"
+text = "127.0.0.1"
+
+[node name="PortInput" type="LineEdit" parent="JoinDialog/VBoxContainer"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+placeholder_text = "Port (default 7777)"
+text = "7777"
+
+[node name="ErrorLabel" type="Label" parent="JoinDialog/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="JoinDialog/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ConnectButton" type="Button" parent="JoinDialog/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Connect"
+
+[node name="CancelButton" type="Button" parent="JoinDialog/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Cancel"
+
+[node name="CardsDialog" type="Panel" parent="."]
+visible = false
+custom_minimum_size = Vector2(460, 600)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -230.0
+offset_top = -300.0
+offset_right = 230.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_dialog")
+
+[node name="Title" type="Label" parent="CardsDialog"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 16.0
+offset_bottom = 44.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "Card Roster (10 Cards)"
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="CardsDialog"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 56.0
+offset_right = -16.0
+offset_bottom = -64.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="GridContainer" type="VBoxContainer" parent="CardsDialog/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="CloseCardsButton" type="Button" parent="CardsDialog"]
+custom_minimum_size = Vector2(140, 40)
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -70.0
+offset_top = -50.0
+offset_right = 70.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Close"
+
+[node name="HowToDialog" type="Panel" parent="."]
+visible = false
+custom_minimum_size = Vector2(440, 500)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -250.0
+offset_right = 220.0
+offset_bottom = 250.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_dialog")
+
+[node name="Title" type="Label" parent="HowToDialog"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 18.0
+offset_bottom = 46.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "How To Play"
+horizontal_alignment = 1
+
+[node name="RichTextLabel" type="RichTextLabel" parent="HowToDialog"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 60.0
+offset_right = -24.0
+offset_bottom = -60.0
+grow_horizontal = 2
+grow_vertical = 2
+bbcode_enabled = true
+text = "[b]Goal:[/b] Destroy more enemy Crown Towers than your opponent within 3 minutes, or destroy the enemy King Tower for an instant 3-Crown victory!
+
+[b]Elixir:[/b]
+• You start with 5 Elixir (Max 10).
+• 1x Elixir during the first 2 minutes.
+• 2x Elixir in the final 1 minute.
+• 3x Elixir during Sudden Death overtime!
+
+[b]Deploying Cards:[/b]
+• Click any card in your 4-card hand at the bottom to select it.
+• Click within your half of the arena (or extended territory) to deploy.
+• Spells like Fireball and Arrows can be placed anywhere on the map!
+• Right-click to cancel card placement.
+
+[b]Multiplayer 1v1:[/b]
+• One player clicks [b]Host 1v1 Match[/b].
+• The second player clicks [b]Join 1v1 Match[/b] (uses localhost 127.0.0.1 for local testing)."
+
+[node name="CloseHowToButton" type="Button" parent="HowToDialog"]
+custom_minimum_size = Vector2(140, 40)
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -70.0
+offset_top = -50.0
+offset_right = 70.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Got It!"

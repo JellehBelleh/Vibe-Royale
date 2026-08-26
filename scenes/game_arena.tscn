@@ -1,0 +1,40 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/GameArena.gd" id="1_garena"]
+[ext_resource type="Script" path="res://scripts/gameplay/Arena.gd" id="2_arena"]
+[ext_resource type="Script" path="res://scripts/gameplay/TerrainDraw.gd" id="3_tdraw"]
+[ext_resource type="Script" path="res://scripts/gameplay/DropZoneOverlay.gd" id="4_dzov"]
+[ext_resource type="Script" path="res://scripts/gameplay/MatchManager.gd" id="5_mmgr"]
+[ext_resource type="PackedScene" path="res://scenes/ui/battle_hud.tscn" id="6_bhud"]
+
+[node name="GameArena" type="Node2D"]
+script = ExtResource("1_garena")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(0, -20)
+zoom = Vector2(1, 1)
+
+[node name="Arena" type="Node2D" parent="."]
+script = ExtResource("2_arena")
+
+[node name="TerrainDraw" type="Node2D" parent="Arena"]
+z_index = -10
+script = ExtResource("3_tdraw")
+
+[node name="DropZoneOverlay" type="Node2D" parent="Arena"]
+z_index = 1
+script = ExtResource("4_dzov")
+
+[node name="UnitContainer" type="Node2D" parent="Arena"]
+z_index = 5
+
+[node name="ProjectileContainer" type="Node2D" parent="Arena"]
+z_index = 15
+
+[node name="FXContainer" type="Node2D" parent="Arena"]
+z_index = 25
+
+[node name="MatchManager" type="Node" parent="."]
+script = ExtResource("5_mmgr")
+
+[node name="BattleHUD" parent="." instance=ExtResource("6_bhud")]

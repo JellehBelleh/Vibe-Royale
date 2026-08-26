@@ -1,0 +1,250 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/BattleHUD.gd" id="1_bhud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/card_slot_ui.tscn" id="2_cslot"]
+[ext_resource type="PackedScene" path="res://scenes/ui/victory_screen.tscn" id="3_vscreen"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_elixir_bg"]
+bg_color = Color(0.1, 0.12, 0.16, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.25, 0.28, 0.35, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_elixir_fg"]
+bg_color = Color(0.9, 0.15, 0.7, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="BattleHUD" type="CanvasLayer"]
+script = ExtResource("1_bhud")
+
+[node name="TopBar" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 65.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="TimerContainer" type="PanelContainer" parent="TopBar"]
+custom_minimum_size = Vector2(100, 34)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -50.0
+offset_top = 10.0
+offset_right = 50.0
+offset_bottom = 44.0
+grow_horizontal = 2
+
+[node name="TimerLabel" type="Label" parent="TopBar/TimerContainer"]
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 20
+text = "3:00"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CrownsContainer" type="HBoxContainer" parent="TopBar"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 20.0
+offset_top = -18.0
+offset_right = 200.0
+offset_bottom = 18.0
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="BlueCrownsLabel" type="Label" parent="TopBar/CrownsContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.7, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 24
+text = "0"
+
+[node name="VSLabel" type="Label" parent="TopBar/CrownsContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 14
+text = "VS"
+
+[node name="RedCrownsLabel" type="Label" parent="TopBar/CrownsContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.35, 0.35, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 24
+text = "0"
+
+[node name="BannerLabel" type="Label" parent="."]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -40.0
+offset_right = 200.0
+offset_bottom = 40.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(200, 40)
+theme_override_colors/font_color = Color(1, 0.9, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 32
+text = "DOUBLE ELIXIR!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BottomDock" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -170.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="ElixirContainer" type="Control" parent="BottomDock"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 6.0
+offset_right = -20.0
+offset_bottom = 32.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="ElixirBar" type="ProgressBar" parent="BottomDock/ElixirContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_elixir_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_elixir_fg")
+max_value = 10.0
+value = 5.0
+show_percentage = false
+
+[node name="ElixirIcon" type="TextureRect" parent="BottomDock/ElixirContainer"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -15.0
+offset_right = 30.0
+offset_bottom = 15.0
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ElixirLabel" type="Label" parent="BottomDock/ElixirContainer"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -70.0
+offset_top = -12.0
+offset_right = -10.0
+offset_bottom = 12.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 14
+text = "5 / 10"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="HandContainer" type="HBoxContainer" parent="BottomDock"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -170.0
+offset_top = -128.0
+offset_right = 170.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="Slot0" parent="BottomDock/HandContainer" instance=ExtResource("2_cslot")]
+layout_mode = 2
+
+[node name="Slot1" parent="BottomDock/HandContainer" instance=ExtResource("2_cslot")]
+layout_mode = 2
+
+[node name="Slot2" parent="BottomDock/HandContainer" instance=ExtResource("2_cslot")]
+layout_mode = 2
+
+[node name="Slot3" parent="BottomDock/HandContainer" instance=ExtResource("2_cslot")]
+layout_mode = 2
+
+[node name="NextContainer" type="VBoxContainer" parent="BottomDock"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -125.0
+offset_right = 66.0
+offset_bottom = -20.0
+grow_vertical = 0
+alignment = 1
+
+[node name="NextLabel" type="Label" parent="BottomDock/NextContainer"]
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 10
+text = "NEXT"
+horizontal_alignment = 1
+
+[node name="NextSlot" parent="BottomDock/NextContainer" instance=ExtResource("2_cslot")]
+custom_minimum_size = Vector2(56, 72)
+layout_mode = 2
+
+[node name="PlacementPreview" type="Node2D" parent="."]
+visible = false
+z_index = 30
+
+[node name="PreviewCircle" type="Line2D" parent="PlacementPreview"]
+width = 2.0
+default_color = Color(0.2, 0.9, 0.4, 0.8)
+
+[node name="PreviewSprite" type="Sprite2D" parent="PlacementPreview"]
+scale = Vector2(0.8, 0.8)
+
+[node name="VictoryScreen" parent="." instance=ExtResource("3_vscreen")]
+visible = false
