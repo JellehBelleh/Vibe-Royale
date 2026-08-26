@@ -50,7 +50,7 @@ func _ready() -> void:
 			rpc("sync_initial_state", team1_hand, team1_next, team1_queue, team2_hand, team2_next, team2_queue, team1_elixir, team2_elixir)
 	else:
 		if multiplayer.has_multiplayer_peer():
-			rpc_id(1, "request_sync_state")
+			rpc_id(1, "request_sync_state", CardDatabase.get_player_deck())
 		
 	if NetworkManager.is_bot_mode:
 		bot_ai = preload("res://scripts/gameplay/BotAI.gd").new()
@@ -58,17 +58,27 @@ func _ready() -> void:
 		bot_ai.setup(self)
 
 func _init_player_decks() -> void:
-	var starter_1 = CardDatabase.get_starter_deck()
-	starter_1.shuffle()
-	team1_hand = [starter_1[0], starter_1[1], starter_1[2], starter_1[3]]
-	team1_next = starter_1[4]
-	team1_queue = [starter_1[5], starter_1[6], starter_1[7]]
+	var deck1: Array[String] = []
+	if NetworkManager.host_deck.size() == 8 and CardDatabase.is_valid_deck(NetworkManager.host_deck):
+		deck1 = NetworkManager.host_deck.duplicate()
+	else:
+		deck1 = CardDatabase.get_player_deck()
+	deck1.shuffle()
+	team1_hand = [deck1[0], deck1[1], deck1[2], deck1[3]]
+	team1_next = deck1[4]
+	team1_queue = [deck1[5], deck1[6], deck1[7]]
 
-	var starter_2 = CardDatabase.get_starter_deck()
-	starter_2.shuffle()
-	team2_hand = [starter_2[0], starter_2[1], starter_2[2], starter_2[3]]
-	team2_next = starter_2[4]
-	team2_queue = [starter_2[5], starter_2[6], starter_2[7]]
+	var deck2: Array[String] = []
+	if NetworkManager.is_bot_mode:
+		deck2 = CardDatabase.get_starter_deck()
+	elif NetworkManager.client_deck.size() == 8 and CardDatabase.is_valid_deck(NetworkManager.client_deck):
+		deck2 = NetworkManager.client_deck.duplicate()
+	else:
+		deck2 = CardDatabase.get_starter_deck()
+	deck2.shuffle()
+	team2_hand = [deck2[0], deck2[1], deck2[2], deck2[3]]
+	team2_next = deck2[4]
+	team2_queue = [deck2[5], deck2[6], deck2[7]]
 
 	hand_updated.emit(1, team1_hand, team1_next)
 	hand_updated.emit(2, team2_hand, team2_next)
@@ -167,9 +177,22 @@ func try_play_card_local(card_id: String, local_target_pos: Vector2) -> bool:
 		return true
 
 @rpc("any_peer", "reliable")
-func request_sync_state() -> void:
+func request_sync_state(client_deck_arg: Array = []) -> void:
 	if NetworkManager.is_host and multiplayer.has_multiplayer_peer():
 		var sender_id = multiplayer.get_remote_sender_id()
+		if client_deck_arg.size() == 8 and CardDatabase.is_valid_deck(client_deck_arg):
+			NetworkManager.client_deck.clear()
+			for id in client_deck_arg:
+				NetworkManager.client_deck.append(str(id))
+			var d2: Array[String] = []
+			for id in client_deck_arg:
+				d2.append(str(id))
+			d2.shuffle()
+			team2_hand = [d2[0], d2[1], d2[2], d2[3]]
+			team2_next = d2[4]
+			team2_queue = [d2[5], d2[6], d2[7]]
+			hand_updated.emit(2, team2_hand, team2_next)
+			print("MatchManager synced custom client deck for Team 2: ", client_deck_arg)
 		rpc_id(sender_id, "sync_initial_state", team1_hand, team1_next, team1_queue, team2_hand, team2_next, team2_queue, team1_elixir, team2_elixir)
 
 @rpc("authority", "reliable")

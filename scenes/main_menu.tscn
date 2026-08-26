@@ -266,65 +266,108 @@ text = "Cancel"
 
 [node name="CardsDialog" type="Panel" parent="."]
 visible = false
-custom_minimum_size = Vector2(460, 600)
+custom_minimum_size = Vector2(500, 840)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -230.0
-offset_top = -300.0
-offset_right = 230.0
-offset_bottom = 300.0
+offset_left = -250.0
+offset_top = -420.0
+offset_right = 250.0
+offset_bottom = 420.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_dialog")
 
-[node name="Title" type="Label" parent="CardsDialog"]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_top = 16.0
-offset_bottom = 44.0
-grow_horizontal = 2
-theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
-theme_override_font_sizes/font_size = 20
-text = "Card Roster (10 Cards)"
-horizontal_alignment = 1
-
-[node name="ScrollContainer" type="ScrollContainer" parent="CardsDialog"]
+[node name="MainVBox" type="VBoxContainer" parent="CardsDialog"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 16.0
-offset_top = 56.0
+offset_top = 14.0
 offset_right = -16.0
-offset_bottom = -64.0
+offset_bottom = -14.0
 grow_horizontal = 2
 grow_vertical = 2
-
-[node name="GridContainer" type="VBoxContainer" parent="CardsDialog/ScrollContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
-[node name="CloseCardsButton" type="Button" parent="CardsDialog"]
-custom_minimum_size = Vector2(140, 40)
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -70.0
-offset_top = -50.0
-offset_right = 70.0
-offset_bottom = -10.0
-grow_horizontal = 2
-grow_vertical = 0
-text = "Close"
+[node name="Title" type="Label" parent="CardsDialog/MainVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "⚔️ BATTLE DECK & COLLECTION"
+horizontal_alignment = 1
+
+[node name="DeckHeader" type="HBoxContainer" parent="CardsDialog/MainVBox"]
+layout_mode = 2
+
+[node name="DeckTitleLabel" type="Label" parent="CardsDialog/MainVBox/DeckHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "Active Battle Deck (8 Cards)"
+
+[node name="AvgElixirLabel" type="Label" parent="CardsDialog/MainVBox/DeckHeader"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.45, 0.85, 1)
+theme_override_font_sizes/font_size = 14
+text = "Avg: 3.5 💧"
+horizontal_alignment = 2
+
+[node name="DeckGrid" type="GridContainer" parent="CardsDialog/MainVBox"]
+layout_mode = 2
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+columns = 4
+
+[node name="HintLabel" type="Label" parent="CardsDialog/MainVBox"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.85, 0.35, 1)
+theme_override_font_sizes/font_size = 12
+text = "💡 Tap any card in your Battle Deck or Collection below to swap."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="CollectionHeader" type="HBoxContainer" parent="CardsDialog/MainVBox"]
+layout_mode = 2
+
+[node name="CollectionTitleLabel" type="Label" parent="CardsDialog/MainVBox/CollectionHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "Card Collection (10 Cards)"
+
+[node name="ResetDeckButton" type="Button" parent="CardsDialog/MainVBox/CollectionHeader"]
+custom_minimum_size = Vector2(130, 26)
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "↺ Reset Default"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="CardsDialog/MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CollectionVBox" type="VBoxContainer" parent="CardsDialog/MainVBox/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="BottomBar" type="HBoxContainer" parent="CardsDialog/MainVBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="CloseCardsButton" type="Button" parent="CardsDialog/MainVBox/BottomBar"]
+custom_minimum_size = Vector2(160, 38)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "✔ Done"
 
 [node name="HowToDialog" type="Panel" parent="."]
 visible = false

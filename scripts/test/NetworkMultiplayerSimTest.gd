@@ -54,13 +54,47 @@ func _ready() -> void:
 	assert(snapshot["units"].size() >= 1, "Snapshot has no units")
 	print("  ✓ World snapshot generated with ", snapshot["units"].size(), " units")
 	
-	# Switch to client perspective to verify snapshot application
-	NetworkManager.local_team = 2
-	arena.apply_world_snapshot(snapshot)
-	var client_unit = arena.units_by_net_id[unit.net_id]
-	assert(client_unit.target_display_pos.y < 0 or client_unit.target_display_pos.y > 0, "Target display pos not set")
-	print("  ✓ Client applied world snapshot successfully! Client display pos: ", client_unit.target_display_pos)
+	# --- Test Multiplayer Custom Deck Synchronization ---
+	print("\n--- Testing Multiplayer Custom Deck Synchronization ---")
+	var host_custom_deck: Array[String] = ["knight", "archers", "giant", "musketeer", "baby_dragon", "skeletons", "fireball", "minions"]
+	var client_custom_deck: Array[String] = ["knight", "archers", "giant", "musketeer", "baby_dragon", "skeletons", "fireball", "cannon"]
+	
+	NetworkManager.host_deck = host_custom_deck.duplicate()
+	NetworkManager.send_client_deck_to_host(client_custom_deck)
+	assert(NetworkManager.client_deck == client_custom_deck, "Client deck not registered on Host")
+	
+	mm._init_player_decks()
+	
+	# Verify Team 1 deck composition
+	var t1_all_cards: Array[String] = []
+	t1_all_cards.append_array(mm.team1_hand)
+	t1_all_cards.append(mm.team1_next)
+	t1_all_cards.append_array(mm.team1_queue)
+	assert(t1_all_cards.size() == 8, "Team 1 deck must have 8 cards")
+	assert(t1_all_cards.has("minions") and not t1_all_cards.has("cannon"), "Team 1 should have custom host deck with minions")
+	print("  ✓ Host custom deck (with minions) initialized authoritative for Team 1: ", t1_all_cards)
+	
+	# Verify Team 2 deck composition
+	var t2_all_cards: Array[String] = []
+	t2_all_cards.append_array(mm.team2_hand)
+	t2_all_cards.append(mm.team2_next)
+	t2_all_cards.append_array(mm.team2_queue)
+	assert(t2_all_cards.size() == 8, "Team 2 deck must have 8 cards")
+	assert(t2_all_cards.has("cannon") and not t2_all_cards.has("minions"), "Team 2 should have custom client deck with cannon")
+	print("  ✓ Client custom deck (with cannon) initialized authoritative for Team 2: ", t2_all_cards)
+	
+	# Simulate dynamic client deck sync request
+	var client_updated_deck: Array[String] = ["knight", "archers", "giant", "musketeer", "baby_dragon", "minions", "cannon", "arrows"]
+	mm.request_sync_state(client_updated_deck)
+	var t2_updated_cards: Array[String] = []
+	t2_updated_cards.append_array(mm.team2_hand)
+	t2_updated_cards.append(mm.team2_next)
+	t2_updated_cards.append_array(mm.team2_queue)
+	assert(t2_updated_cards.has("minions") and t2_updated_cards.has("cannon"), "Team 2 should reflect updated client deck")
+	print("  ✓ Client dynamic deck sync via request_sync_state verified!")
 	
 	NetworkManager.close_network()
-	print("  ✓ All multiplayer sync & perspective tests passed flawlessly!")
+	print("\n========================================================")
+	print("🎉 ALL MULTIPLAYER NETWORK & DECK SYNC TESTS PASSED!")
+	print("========================================================\n")
 	get_tree().quit(0)

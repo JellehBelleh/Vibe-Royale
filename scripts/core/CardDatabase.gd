@@ -20,10 +20,17 @@ const SPEED_MEDIUM: float = 58.0
 const SPEED_FAST: float = 85.0
 const SPEED_VERY_FAST: float = 110.0
 
+const DECK_SIZE: int = 8
+const SAVE_PATH: String = "user://player_deck.json"
+
+signal deck_changed(new_deck: Array)
+
 var cards: Dictionary = {}
+var active_deck: Array[String] = []
 
 func _init() -> void:
 	_register_all_cards()
+	active_deck = load_player_deck()
 
 func _register_all_cards() -> void:
 	# 1. KNIGHT - Tough Melee Fighter
@@ -279,3 +286,106 @@ func get_starter_deck() -> Array[String]:
 		"fireball",
 		"arrows"
 	]
+
+func is_valid_deck(deck: Array) -> bool:
+	if deck.size() != DECK_SIZE:
+		return false
+	var seen: Dictionary = {}
+	for card_id in deck:
+		var s_id = str(card_id)
+		if not cards.has(s_id) or seen.has(s_id):
+			return false
+		seen[s_id] = true
+	return true
+
+func get_player_deck() -> Array[String]:
+	if not is_valid_deck(active_deck):
+		active_deck = load_player_deck()
+	var copy: Array[String] = []
+	for id in active_deck:
+		copy.append(str(id))
+	return copy
+
+func set_player_deck(new_deck: Array) -> bool:
+	if not is_valid_deck(new_deck):
+		return false
+	active_deck.clear()
+	for id in new_deck:
+		active_deck.append(str(id))
+	save_player_deck()
+	deck_changed.emit(active_deck.duplicate())
+	return true
+
+func swap_deck_card(slot_idx: int, new_card_id: String) -> bool:
+	if slot_idx < 0 or slot_idx >= DECK_SIZE:
+		return false
+	if not cards.has(new_card_id):
+		return false
+	if not is_valid_deck(active_deck):
+		active_deck = get_starter_deck()
+
+	var existing_idx = active_deck.find(new_card_id)
+	if existing_idx != -1:
+		# If the card is already in the deck, swap the two slot positions
+		var temp = active_deck[slot_idx]
+		active_deck[slot_idx] = new_card_id
+		active_deck[existing_idx] = temp
+	else:
+		# Replace the card at slot_idx
+		active_deck[slot_idx] = new_card_id
+
+	save_player_deck()
+	deck_changed.emit(active_deck.duplicate())
+	return true
+
+func swap_two_slots(slot_a: int, slot_b: int) -> bool:
+	if slot_a < 0 or slot_a >= DECK_SIZE or slot_b < 0 or slot_b >= DECK_SIZE:
+		return false
+	if not is_valid_deck(active_deck):
+		active_deck = get_starter_deck()
+		
+	var temp = active_deck[slot_a]
+	active_deck[slot_a] = active_deck[slot_b]
+	active_deck[slot_b] = temp
+	save_player_deck()
+	deck_changed.emit(active_deck.duplicate())
+	return true
+
+func reset_to_starter_deck() -> void:
+	active_deck = get_starter_deck()
+	save_player_deck()
+	deck_changed.emit(active_deck.duplicate())
+
+func get_average_elixir(deck: Array = []) -> float:
+	var target = deck if deck.size() > 0 else active_deck
+	if target.size() == 0:
+		return 0.0
+	var total: float = 0.0
+	for id in target:
+		var c = get_card(str(id))
+		total += float(c.get("cost", 3))
+	return snappedf(total / float(target.size()), 0.1)
+
+func save_player_deck() -> void:
+	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file:
+		var data = {
+			"deck": active_deck
+		}
+		file.store_string(JSON.stringify(data))
+		file.close()
+
+func load_player_deck() -> Array[String]:
+	if FileAccess.file_exists(SAVE_PATH):
+		var file = FileAccess.open(SAVE_PATH, FileAccess.READ)
+		if file:
+			var text = file.get_as_text()
+			file.close()
+			var parsed = JSON.parse_string(text)
+			if parsed is Dictionary and parsed.has("deck") and parsed["deck"] is Array:
+				if is_valid_deck(parsed["deck"]):
+					var result: Array[String] = []
+					for id in parsed["deck"]:
+						result.append(str(id))
+					return result
+	return get_starter_deck()

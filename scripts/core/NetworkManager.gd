@@ -16,6 +16,9 @@ var is_bot_mode: bool = false
 var local_team: int = 1 # 1 = Blue (Host), 2 = Red (Client/Bot)
 var opponent_connected: bool = false
 
+var host_deck: Array[String] = []
+var client_deck: Array[String] = []
+
 func _ready() -> void:
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
@@ -39,6 +42,8 @@ func host_game(port: int = DEFAULT_PORT) -> Error:
 	is_bot_mode = false
 	local_team = 1 # Host is always Blue (Team 1)
 	opponent_connected = false
+	host_deck = CardDatabase.get_player_deck()
+	client_deck.clear()
 	print("Server hosted on port ", port, ". Waiting for opponent...")
 	return OK
 
@@ -58,6 +63,8 @@ func join_game(ip: String = "127.0.0.1", port: int = DEFAULT_PORT) -> Error:
 	is_bot_mode = false
 	local_team = 2 # Client is always Red (Team 2)
 	opponent_connected = false
+	client_deck = CardDatabase.get_player_deck()
+	host_deck.clear()
 	print("Connecting to ", ip, ":", port, "...")
 	return OK
 
@@ -70,6 +77,8 @@ func start_bot_mode() -> void:
 	is_bot_mode = true
 	local_team = 1
 	opponent_connected = true
+	host_deck = CardDatabase.get_player_deck()
+	client_deck = CardDatabase.get_starter_deck()
 	get_tree().change_scene_to_file("res://scenes/game_arena.tscn")
 
 # --- CLEANUP ---
@@ -83,6 +92,8 @@ func close_network() -> void:
 	is_host = false
 	is_bot_mode = false
 	opponent_connected = false
+	host_deck.clear()
+	client_deck.clear()
 
 # --- NETWORK CALLBACKS ---
 
@@ -105,7 +116,17 @@ func _on_peer_disconnected(peer_id: int) -> void:
 func _on_connected_to_server() -> void:
 	print("Connected to host server successfully!")
 	opponent_connected = true
+	client_deck = CardDatabase.get_player_deck()
+	rpc_id(1, "send_client_deck_to_host", client_deck)
 	connection_succeeded.emit()
+
+@rpc("any_peer", "reliable")
+func send_client_deck_to_host(deck: Array) -> void:
+	if is_host and CardDatabase.is_valid_deck(deck):
+		client_deck.clear()
+		for id in deck:
+			client_deck.append(str(id))
+		print("Host received valid client deck: ", client_deck)
 
 func _on_connection_failed() -> void:
 	print("Failed to connect to server.")

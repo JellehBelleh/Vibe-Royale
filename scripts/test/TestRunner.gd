@@ -6,6 +6,7 @@ func _ready() -> void:
 	print("==========================================\n")
 	
 	_test_card_database()
+	_test_deck_customization_and_persistence()
 	_test_textures_and_sounds()
 	_test_arena_and_towers()
 	_test_combat_and_spells()
@@ -14,7 +15,7 @@ func _ready() -> void:
 	_test_networking_setup()
 	
 	print("\n==========================================")
-	print("🎉 ALL 7 TEST SUITES PASSED FLAWLESSLY!")
+	print("🎉 ALL 8 TEST SUITES PASSED FLAWLESSLY!")
 	print("==========================================\n")
 	get_tree().quit(0)
 
@@ -34,8 +35,67 @@ func _test_card_database() -> void:
 		assert(c["cost"] >= 1 and c["cost"] <= 10, "Invalid cost for " + id)
 	print("  ✓ All card stats validated!")
 
+func _test_deck_customization_and_persistence() -> void:
+	print("\n[2/8] Testing Deck Customization, Swapping & Persistence...")
+	
+	# Reset to known default
+	CardDatabase.reset_to_starter_deck()
+	var initial_deck = CardDatabase.get_player_deck()
+	assert(initial_deck.size() == 8, "Initial deck size must be 8")
+	assert(not initial_deck.has("cannon"), "Starter deck should not have cannon initially")
+	assert(not initial_deck.has("minions"), "Starter deck should not have minions initially")
+	
+	# Test Deck Validation
+	assert(CardDatabase.is_valid_deck(initial_deck), "Initial deck must be valid")
+	assert(not CardDatabase.is_valid_deck(["knight", "archers"]), "Deck of size 2 must be invalid")
+	assert(not CardDatabase.is_valid_deck(["knight", "knight", "archers", "giant", "musketeer", "baby_dragon", "fireball", "arrows"]), "Deck with duplicates must be invalid")
+	assert(not CardDatabase.is_valid_deck(["fake_card", "knight", "archers", "giant", "musketeer", "baby_dragon", "fireball", "arrows"]), "Deck with invalid card must be invalid")
+	
+	# Test Card Swapping (Replace slot 5 'skeletons' with 'cannon')
+	var skeletons_idx = initial_deck.find("skeletons")
+	assert(skeletons_idx != -1, "skeletons should be in starter deck")
+	var swap_res = CardDatabase.swap_deck_card(skeletons_idx, "cannon")
+	assert(swap_res == true, "swap_deck_card should succeed")
+	
+	var modified_deck = CardDatabase.get_player_deck()
+	assert(modified_deck[skeletons_idx] == "cannon", "Slot should now be cannon")
+	assert(not modified_deck.has("skeletons"), "skeletons should no longer be in active deck")
+	assert(modified_deck.has("cannon"), "cannon should be in active deck")
+	
+	# Test Average Elixir Calculation
+	var avg_elixir = CardDatabase.get_average_elixir(modified_deck)
+	assert(avg_elixir > 0.0, "Average elixir must be positive")
+	print("  ✓ Average elixir calculated correctly: ", avg_elixir, " 💧")
+	
+	# Test Reordering Deck Slots (Swap slot 0 and slot 1)
+	var card_at_0 = modified_deck[0]
+	var card_at_1 = modified_deck[1]
+	CardDatabase.swap_two_slots(0, 1)
+	var reordered_deck = CardDatabase.get_player_deck()
+	assert(reordered_deck[0] == card_at_1 and reordered_deck[1] == card_at_0, "Slots 0 and 1 should be swapped")
+	
+	# Test Swapping an already included card (Swap 'cannon' with 'knight')
+	var cannon_idx = reordered_deck.find("cannon")
+	var knight_idx = reordered_deck.find("knight")
+	CardDatabase.swap_deck_card(cannon_idx, "knight")
+	var deck_after_internal_swap = CardDatabase.get_player_deck()
+	assert(deck_after_internal_swap[cannon_idx] == "knight", "cannon slot should now be knight")
+	assert(deck_after_internal_swap[knight_idx] == "cannon", "knight slot should now be cannon")
+	assert(deck_after_internal_swap.size() == 8, "Deck size must remain 8 after internal swap")
+	
+	# Test Persistence (Save and reload)
+	CardDatabase.save_player_deck()
+	var loaded_deck = CardDatabase.load_player_deck()
+	assert(loaded_deck == deck_after_internal_swap, "Loaded deck must match saved deck")
+	print("  ✓ File persistence (user://player_deck.json) verified")
+	
+	# Reset back to clean starter deck
+	CardDatabase.reset_to_starter_deck()
+	assert(CardDatabase.get_player_deck() == CardDatabase.get_starter_deck(), "Reset to starter deck failed")
+	print("  ✓ Deck swapping, slot reordering, validation and persistence tests passed!")
+
 func _test_textures_and_sounds() -> void:
-	print("\n[2/7] Testing TextureGenerator & SoundManager...")
+	print("\n[3/8] Testing TextureGenerator & SoundManager...")
 	for id in CardDatabase.get_all_card_ids():
 		var icon = TextureGenerator.get_card_icon(id)
 		assert(icon != null, "Failed to generate card icon for " + id)
@@ -53,7 +113,7 @@ func _test_textures_and_sounds() -> void:
 	print("  ✓ Procedural synthesized SFX audio pool verified")
 
 func _test_arena_and_towers() -> void:
-	print("\n[3/7] Testing Arena & Tower Setup...")
+	print("\n[4/8] Testing Arena & Tower Setup...")
 	var arena_scene = load("res://scenes/entities/tower.tscn")
 	assert(arena_scene != null, "Tower scene failed to load")
 	
@@ -73,7 +133,7 @@ func _test_arena_and_towers() -> void:
 	print("  ✓ Tower mechanics & King activation verified")
 
 func _test_combat_and_spells() -> void:
-	print("\n[4/7] Testing Combat Entities & Spells...")
+	print("\n[5/8] Testing Combat Entities & Spells...")
 	var unit_scene = load("res://scenes/entities/unit.tscn")
 	assert(unit_scene != null, "Unit scene failed to load")
 	
@@ -96,7 +156,7 @@ func _test_combat_and_spells() -> void:
 	print("  ✓ Units initialization & stats verified")
 
 func _test_bridge_and_water_pathfinding() -> void:
-	print("\n[5/7] Testing Ground Unit Bridge Pathfinding & Flying Unit Water Bypass...")
+	print("\n[6/8] Testing Ground Unit Bridge Pathfinding & Flying Unit Water Bypass...")
 	var unit_scene = load("res://scenes/entities/unit.tscn")
 	assert(unit_scene != null, "Unit scene failed to load")
 	
@@ -169,7 +229,7 @@ func _test_bridge_and_water_pathfinding() -> void:
 	print("  ✓ Ground bridge navigation, water blocking, and flying unit bypass verified!")
 
 func _test_match_manager_flow() -> void:
-	print("\n[6/7] Testing MatchManager & Elixir/Hand Cycles...")
+	print("\n[7/8] Testing MatchManager & Elixir/Hand Cycles...")
 	var arena_main = load("res://scenes/game_arena.tscn").instantiate()
 	add_child(arena_main)
 	
@@ -188,7 +248,7 @@ func _test_match_manager_flow() -> void:
 	arena_main.queue_free()
 
 func _test_networking_setup() -> void:
-	print("\n[7/7] Testing NetworkManager hosting and local joining...")
+	print("\n[8/8] Testing NetworkManager hosting and local joining...")
 	var host_err = NetworkManager.host_game(7788)
 	assert(host_err == OK, "Failed to create local host server on 7788")
 	assert(NetworkManager.is_host == true, "is_host must be true")
